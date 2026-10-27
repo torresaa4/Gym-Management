@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Summit Fitness gym management demo: browse classes, pick a membership and book your spot online.">
+<title>Summit Fitness — Gym Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ANNOUNCEMENT BAR (visitors only) -->
+  <div class="announce" data-auth="out">
+    New here? Pick a plan and book your first class in minutes.
+    <button type="button" data-open="register">Join now</button>
+  </div>
+
+  <!-- NAV -->
+  <header class="topbar">
+    <button type="button" class="topbar__brand" data-view="home" aria-label="Summit Fitness home">SUMMIT FITNESS</button>
+    <nav class="topbar__nav" aria-label="Main">
+      <button class="navlink is-active" data-view="home">Home</button>
+      <button class="navlink" data-view="home" data-scroll="plans">Plans</button>
+      <button class="navlink" data-view="schedule">Schedule</button>
+      <button class="navlink" data-view="account" data-auth="in" data-auth-preview>My account</button>
+    </nav>
+    <div class="topbar__user">
+      <span id="userLabel">Not signed in</span>
+      <button id="registerBtn" class="btn btn--ghost">Sign up</button>
+      <button id="authBtn" class="btn btn--primary">Log in</button>
+    </div>
+  </header>
+
+  <!-- AUTH MODAL -->
+  <div id="authModal" class="modal hidden">
+    <div class="modal__box">
+      <div class="modal__head">
+        <h2 id="authTitle">Log in</h2>
+        <button class="modal__close" data-close="authModal" aria-label="Close">&times;</button>
+      </div>
+      <form id="authForm" class="form">
+        <label>Name
+          <input type="text" id="authName" placeholder="Alex Rivera" required>
+        </label>
+        <label>Email
+          <input type="email" id="authEmail" placeholder="you@example.com" required>
+        </label>
+        <label>Password
+          <input type="password" id="authPassword" placeholder="••••••••" required>
+        </label>
+        <button type="submit" class="btn btn--primary btn--block">Log in</button>
+        <p class="form__note">This demo has no real backend — plug your API into <code>script.js</code>.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- REGISTER MODAL -->
+  <div id="registerModal" class="modal hidden">
+    <div class="modal__box modal__box--wide">
+      <div class="modal__head">
+        <h2>Create account</h2>
+        <button class="modal__close" data-close="registerModal" aria-label="Close">&times;</button>
+      </div>
+      <form id="registerForm" class="form">
+        <label>Username
+          <input type="text" id="regUsername" placeholder="alexr" required>
+        </label>
+        <label>Email
+          <input type="email" id="regEmail" placeholder="you@example.com" required>
+        </label>
+        <label>Password
+          <input type="password" id="regPassword" placeholder="••••••••" required>
+        </label>
+
+        <div class="plan-picker">
+          <span class="plan-picker__label">Choose a membership</span>
+          <div class="plan-grid">
+            <label class="plan-card">
+              <input type="radio" name="plan" value="Basic" checked>
+              <span class="plan-card__name">Basic</span>
+              <span class="plan-card__price">$30</span>
+              <span class="plan-card__duration">30 days</span>
+            </label>
+            <label class="plan-card">
+              <input type="radio" name="plan" value="Premium">
+              <span class="plan-card__name">Premium</span>
+              <span class="plan-card__price">$80</span>
+              <span class="plan-card__duration">90 days</span>
+            </label>
+            <label class="plan-card">
+              <input type="radio" name="plan" value="VIP">
+              <span class="plan-card__name">VIP</span>
+              <span class="plan-card__price">$300</span>
+              <span class="plan-card__duration">365 days</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block">Create account</button>
+        <p class="form__note">This demo has no real backend — plug your API and payment flow into <code>script.js</code>.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- HOME -->
+    <section id="view-home" class="view">
+
+      <!-- Hero -->
+      <div class="hero" id="hero">
+        <div class="hero__slides" aria-hidden="true">
+          <div class="hero__slide is-active" data-type= "HIIT"></div>
+          <div class="hero__slide" data-type="Yoga"></div>
+          <div class="hero__slide" data-type="Strength"></div>
+          <div class="hero__slide" data-type="Cycling"></div>
+        </div>
+
+        <div class="hero__inner">z
+          <p class="eyebrow">Classes · Coaching · Memberships</p>
+          <h1 class="hero__title">Stronger<br>starts <span>here.</span></h1>
+          <p class="hero__sub">Pick a plan, browse the weekly class schedule and book your spot in seconds.</p>
+          <div class="hero__cta">
+            <button class="btn btn--primary btn--lg" data-open="register" data-auth="out">Join now</button>
+            <button class="btn btn--primary btn--lg" data-view="account" data-auth="in">Go to my account</button>
+            <button class="btn btn--ghost btn--lg" data-view="schedule">See the class schedule</button>
+          </div>
+        </div>
+
+        <div class="hero__bar">
+          <div class="hero__bar-inner">
+            <span id="heroCaption" class="hero__caption" aria-live="off"></span>
+            <div class="hero__dots" role="group" aria-label="Choose a slide">
+              <button type="button" class="is-active" aria-label="Show HI slide" aria-current="true"></button>
+              <button type="button" aria-label="Show Yoga slide" aria-current="false"></button>
+              <button type="button" aria-label="Show Strength slide" aria-current="false"></button>
+              <button type="button" aria-label="Show Cycling slide" aria-current="false"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="stats-strip">
+        <div class="stats-strip__inner">
+          <div class="stat"><span id="statClasses" class="stat__value">0</span><span class="stat__label">Classes every week</span></div>
+          <div class="stat"><span id="statTrainers" class="stat__value">0</span><span class="stat__label">Trainers on the schedule</span></div>
+          <div class="stat"><span id="statPlans" class="stat__value">3</span><span class="stat__label">Membership plans</span></div>
+          <div class="stat"><span id="statFrom" class="stat__value">$30</span><span class="stat__label">Memberships start at</span></div>
+        </div>
+      </div>
+
+      <!-- Classes -->
+      <section class="section" id="classes">
+        <div class="container">
+          <div class="section__head">
+            <p class="eyebrow">Group fitness</p>
+            <h2 class="section__title">Find your class</h2>
+            <p class="section__sub">Four class types, scheduled through the week. Pick one to see what's on.</p>
+          </div>
+          <div class="tile-grid">
+            <button class="tile" data-filter-type= "HIIT">
+              <span class="tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
+              <span class="tile__name">HIIT</span>
+              <span class="tile__meta" data-count="HIIT"></span>
+              <span class="tile__link">View classes →</span>
+            </button>
+            <button class="tile" data-filter-type="Yoga">
+              <span class="tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 8v6M5 11l7 3 7-3M7 21l5-7 5 7"/></svg></span>
+              <span class="tile__name">Yoga</span>
+              <span class="tile__meta" data-count="Yoga"></span>
+              <span class="tile__link">View classes →</span>
+            </button>
+            <button class="tile" data-filter-type="Strength">
+              <span class="tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></span>
+              <span class="tile__name">Strength</span>
+              <span class="tile__meta" data-count="Strength"></span>
+              <span class="tile__link">View classes →</span>
+            </button>
+            <button class="tile" data-filter-type="Cycling">
+              <span class="tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-8h5l3 8M10 8l3 8M9 5h3"/></svg></span>
+              <span class="tile__name">Cycling</span>
+              <span class="tile__meta" data-count="Cycling"></span>
+              <span class="tile__link">View classes →</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Plans -->
+      <section class="section section--alt" id="plans">
+        <div class="container">
+          <div class="section__head">
+            <p class="eyebrow">Memberships</p>
+            <h2 class="section__title">Pick a plan</h2>
+            <p class="section__sub">Three plans, flat prices. The longer you commit, the less each day costs.</p>
+          </div>
+          <div id="pricingGrid" class="pricing-grid"></div>
+          <p class="fine-print">Demo only: no real payment is taken. Daily cost is the plan price divided by its length in days.</p>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="section" id="how">
+        <div class="container">
+          <div class="section__head">
+            <p class="eyebrow">How it works</p>
+            <h2 class="section__title">Three steps to your first workout</h2>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <span class="step__num">01</span>
+              <h3>Choose a plan</h3>
+              <p>Sign up with a username and email, then pick Basic, Premium or VIP.</p>
+            </div>
+            <div class="step">
+              <span class="step__num">02</span>
+              <h3>Browse the schedule</h3>
+              <p>Search by class or trainer and filter by day or type. Spots left are shown for every class.</p>
+            </div>
+            <div class="step">
+              <span class="step__num">03</span>
+              <h3>Book your spot</h3>
+              <p>Reserve with one click. Plans change? Cancel a booking and the spot goes back to the class.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trainers -->
+      <section class="section section--alt" id="trainers">
+        <div class="container">
+          <div class="section__head">
+            <p class="eyebrow">Our trainers</p>
+            <h2 class="section__title">Meet the people leading your classes</h2>
+          </div>
+          <div id="trainerGrid" class="trainer-grid"></div>
+        </div>
+      </section>
+
+      <!-- Closing call to action -->
+      <section class="cta-band">
+        <div class="container">
+          <h2 class="cta-band__title">Ready when you are.</h2>
+          <p class="cta-band__sub">Create your account, choose a plan and book a class today.</p>
+          <div class="cta-band__actions">
+            <button class="btn btn--dark btn--lg" data-open="register" data-auth="out">Join now</button>
+            <button class="btn btn--dark btn--lg" data-view="account" data-auth="in">Go to my account</button>
+            <button class="btn btn--outline-dark btn--lg" data-view="schedule">Browse classes</button>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- MY ACCOUNT -->
+    <section id="view-account" class="view view--page hidden">
+      <div id="previewBanner" class="preview-banner hidden" role="status">
+        <strong>Preview mode.</strong> You're not signed in, so this page shows sample data and its controls are turned off.
+        <button class="linklike linklike--accent" data-open="login">Log in</button> or
+        <button class="linklike linklike--accent" data-open="register">sign up</button> to use it.
+      </div>
+
+      <div class="account-head">
+        <div id="acctAvatar" class="account-head__avatar" aria-hidden="true"></div>
+        <div>
+          <h1 id="acctName" class="account-head__name">My account</h1>
+          <p id="acctSince" class="muted"></p>
+        </div>
+      </div>
+
+      <div class="account-grid">
+        <section class="panel" aria-labelledby="acctMembershipTitle">
+          <h2 id="acctMembershipTitle" class="panel__title">Membership</h2>
+          <div id="acctMembership"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="acctProfileTitle">
+          <h2 id="acctProfileTitle" class="panel__title">Your details</h2>
+          <form id="profileForm" class="form">
+            <label>Username
+              <input type="text" id="profUsername" autocomplete="username" required>
+            </label>
+            <label>Email
+              <input type="email" id="profEmail" autocomplete="email" required>
+            </label>
+            <button type="submit" class="btn btn--primary">Save changes</button>
+            <p id="profileStatus" class="form__status" role="status"></p>
+          </form>
+        </section>
+      </div>
+
+      <section class="panel" aria-labelledby="acctClassesTitle">
+        <h2 id="acctClassesTitle" class="panel__title">My classes</h2>
+        <div id="myBookings" class="booking-list"></div>
+      </section>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="view-schedule" class="view view--page hidden">
+      <h1 class="section-title section-title--lg">Class schedule</h1>
+
+      <div class="filters">
+        <input type="text" id="filterSearch" placeholder="Search classes or trainers…">
+        <select id="filterDay">
+          <option value="">All days</option>
+          <option>Monday</option>
+          <option>Tuesday</option>
+          <option>Wednesday</option>
+          <option>Thursday</option>
+          <option>Friday</option>
+        </select>
+        <select id="filterType">
+          <option value="">All types</option>
+          <option>HIIT</option>
+          <option>Yoga</option>
+          <option>Strength</option>
+          <option>Cycling</option>
+        </select>
+      </div>
+
+      <table class="schedule-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Trainer</th>
+            <th>Day / time</th>
+            <th>Spots</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="scheduleBody"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <div class="footer__brand">SUMMIT FITNESS</div>
+          <p class="footer__blurb">A gym management web app: classes, memberships and bookings in one place.</p>
+        </div>
+        <div>
+          <h3 class="footer__heading">Explore</h3>
+          <ul class="footer__list">
+            <li><button class="linklike" data-view="home">Home</button></li>
+            <li><button class="linklike" data-view="schedule">Class schedule</button></li>
+            <li><button class="linklike" data-view="home" data-scroll="plans">Membership plans</button></li>
+            <li><button class="linklike" data-view="home" data-scroll="trainers">Trainers</button></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer__heading">Account</h3>
+          <ul class="footer__list">
+            <li data-auth="out"><button class="linklike" data-open="register">Sign up</button></li>
+            <li data-auth="out"><button class="linklike" data-open="login">Log in</button></li>
+            <li data-auth="in" data-auth-preview><button class="linklike" data-view="account">My account</button></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; <span id="footerYear">2026</span> Summit Fitness. A group project demo: no real payments or personal data are processed.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
