@@ -74,29 +74,7 @@ const reduceMotion = typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- Members and memberships ----------
-function findByEmail(email) {
-  return members.find(m => m.email.toLowerCase() === email.toLowerCase());
-}
 
-function usernameTaken(username, except) {
-  return members.some(m => m !== except && m.username.toLowerCase() === username.toLowerCase());
-}
-
-function createMember(username, email, plan) {
-  const now = new Date();
-  const user = {
-    id: nextUserId++,
-    username,
-    email,
-    membership: plan,
-    joinedOn: now,
-    startedOn: now,
-    expiresOn: addDays(now, PLANS[plan].days),
-    bookings: [],
-  };
-  members.push(user);
-  return user;
-}
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -135,7 +113,7 @@ function applyPlan(user, plan) {
   }
 }
 
-// Sample member shown by the signed-out preview of My account. Never added to `members`.
+// preview of my account page ----------------------------
 let previewUser = null;
 
 function accountUser() {
@@ -270,45 +248,90 @@ authBtn.addEventListener("click", () => {
 registerBtn.addEventListener("click", () => openRegister());
 
 // ---------- Auth: log in (mock — TODO: connect to backend) ----------
-authForm.addEventListener("submit", (e) => {
+authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const name = document.getElementById("authName").value.trim();
-  const email = document.getElementById("authEmail").value.trim();
+  const username = document.getElementById("authName").value.trim();
+  const password = document.getElementById("authPassword").value;
+  const userData = {
+    username: username,
+    password: password
+  };
 
+  try{
+    const response = await fetch("http://localhost:8000/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(userData)
+    });
+  
   // TODO: connect to backend — POST /api/login
   // For now: find an existing member by email, or create a quick Basic account.
-  currentUser = findByEmail(email) || createMember(name, email, "Basic");
+  
 
+  const login_data = await response.json();
+  if (!response.ok){
+    alert(data.detail || "Login failed")
+    return;
+  }
+  // save jwt
+  const accessToken = login_data.access_token;
   authModal.classList.add("hidden");
   authForm.reset();
-  renderAll();
-  if (currentView === "home") showView("account");
+
+  // use token to get user info
+  console.log("Login Successful:", accessToken);
+  sessionStorage.setItem("accessToken", accessToken);
+
+  } catch (error){
+  console.error("Login error:", error);
+  alert("Could not connect to server");
+}
 });
 
-// ---------- Auth: register (mock — TODO: connect to backend) ----------
-registerForm.addEventListener("submit", (e) => {
+
+// ---------- Register Frontend to Backend Connection ----------
+registerForm.addEventListener("submit", async( e) => {
   e.preventDefault();
   const username = document.getElementById("regUsername").value.trim();
   const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value;
   const plan = registerForm.querySelector('input[name="plan"]:checked').value;
 
-  if (findByEmail(email)) {
-    alert("An account with that email already exists — log in instead.");
-    return;
-  }
-  if (usernameTaken(username)) {
-    alert("That username is taken. Try another one.");
+  const userData = {
+    username: username,
+    email: email,
+    password: password,
+    membership_type: plan
+  };
+
+  try{
+    const response = await fetch("http://localhost:8000/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(userData)
+    });
+  
+  const data = await response.json();
+  if (!response.ok){
+    alert(data.detail || "Registration failed")
     return;
   }
 
-  // TODO: connect to backend — POST /api/signup, then charge PLANS[plan].price
-  // via your payment processor before activating the membership.
-  currentUser = createMember(username, email, plan);
+  const registerMessage = document.getElementById("registerMessage");
+
+  registerMessage.textContent = data.message || "Registration successful!";
+  registerMessage.style.color = "green";
 
   registerModal.classList.add("hidden");
   registerForm.reset();
-  renderAll();
-  if (currentView === "home") showView("account");
+} catch (error){
+  console.error("Registartion error:", error);
+  alert("Could not connect to server");
+}
 });
 
 function logout() {
