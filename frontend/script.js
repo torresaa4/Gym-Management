@@ -74,7 +74,33 @@ const reduceMotion = typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- Members and memberships ----------
+function findByEmail(email) {
+  return members.find(m => m.email.toLowerCase() === email.toLowerCase());
+}
 
+function usernameTaken(username, except) {
+  return members.some(m => m !== except && m.username.toLowerCase() === username.toLowerCase());
+}
+
+function createMember(username, email, plan, password) {
+  const now = new Date();
+  const user = {
+    id: nextUserId++,
+    username,
+    email,
+    password, // TODO: connect to backend — never store or compare plain-text passwords for real
+    membership: plan,
+    joinedOn: now,
+    startedOn: now,
+    expiresOn: addDays(now, PLANS[plan].days),
+    bookings: [],
+  };
+  members.push(user);
+  return user;
+}
+
+// Seeded so there's a real account to log into right away — see the auth modal's note.
+createMember("Demo Member", "demo@example.com", "Premium", "demo1234");
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -113,7 +139,7 @@ function applyPlan(user, plan) {
   }
 }
 
-// preview of my account page ----------------------------
+// Sample member shown by the signed-out preview of My account. Never added to `members`.
 let previewUser = null;
 
 function accountUser() {
@@ -147,6 +173,7 @@ const registerBtn = document.getElementById("registerBtn");
 const acctMembership = document.getElementById("acctMembership");
 const profileForm = document.getElementById("profileForm");
 const profileStatus = document.getElementById("profileStatus");
+const authStatus = document.getElementById("authStatus");
 
 // ---------- View routing ----------
 const navlinks = document.querySelectorAll(".navlink");
@@ -188,6 +215,16 @@ function openRegister(plan) {
   registerModal.classList.remove("hidden");
 }
 
+function setAuthStatus(message, isError) {
+  authStatus.textContent = message;
+  authStatus.className = "form__status" + (isError ? " form__status--error" : "");
+}
+
+function openLogin() {
+  setAuthStatus("", false);
+  authModal.classList.remove("hidden");
+}
+
 // One delegated handler covers nav links, hero/CTA buttons, class tiles,
 // trainer cards, plan buttons and footer links, including ones rendered later by JS.
 document.addEventListener("click", (e) => {
@@ -199,7 +236,7 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (el.dataset.open === "login") {
-    authModal.classList.remove("hidden");
+    openLogin();
     return;
   }
   if (el.dataset.switchPlan) {
@@ -228,6 +265,7 @@ document.addEventListener("click", (e) => {
 document.querySelectorAll("[data-close]").forEach(btn => {
   btn.addEventListener("click", () => {
     document.getElementById(btn.dataset.close).classList.add("hidden");
+    if (btn.dataset.close === "authModal") setAuthStatus("", false);
   });
 });
 
@@ -241,97 +279,68 @@ authBtn.addEventListener("click", () => {
   if (currentUser) {
     logout();
   } else {
-    authModal.classList.remove("hidden");
+    openLogin();
   }
 });
 
 registerBtn.addEventListener("click", () => openRegister());
 
 // ---------- Auth: log in (mock — TODO: connect to backend) ----------
-authForm.addEventListener("submit", async (e) => {
+authForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const username = document.getElementById("authName").value.trim();
+  const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
-  const userData = {
-    username: username,
-    password: password
-  };
 
-  try{
-    const response = await fetch("http://localhost:8000/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(userData)
-    });
-  
-  // TODO: connect to backend — POST /api/login
-  // For now: find an existing member by email, or create a quick Basic account.
-  
+  // TODO: connect to backend — POST /api/login, and never compare plain-text passwords like this.
+  const match = findByEmail(email);
 
-  const login_data = await response.json();
-  if (!response.ok){
-    alert(data.detail || "Login failed")
+  if (!match) {
+    setAuthStatus("No account found with that email. Sign up to create one.", true);
     return;
   }
-  // save jwt
-  const accessToken = login_data.access_token;
-  authModal.classList.add("hidden");
-  authForm.reset();
+  if (match.password !== password) {
+    setAuthStatus("Incorrect password. Try again.", true);
+    return;
+  }
 
-  // use token to get user info
-  console.log("Login Successful:", accessToken);
-  sessionStorage.setItem("accessToken", accessToken);
+  currentUser = match;
+  setAuthStatus(`Login successful — welcome back, ${match.username}.`, false);
+  renderAll();
 
-  } catch (error){
-  console.error("Login error:", error);
-  alert("Could not connect to server");
-}
+  // Give the success message a moment to show, then close and jump to My account.
+  window.setTimeout(() => {
+    authModal.classList.add("hidden");
+    authForm.reset();
+    setAuthStatus("", false);
+    showView("account");
+  }, 700);
 });
 
-
-// ---------- Register Frontend to Backend Connection ----------
-registerForm.addEventListener("submit", async( e) => {
+// ---------- Auth: register (mock — TODO: connect to backend) ----------
+registerForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const username = document.getElementById("regUsername").value.trim();
   const email = document.getElementById("regEmail").value.trim();
   const password = document.getElementById("regPassword").value;
   const plan = registerForm.querySelector('input[name="plan"]:checked').value;
 
-  const userData = {
-    username: username,
-    email: email,
-    password: password,
-    membership_type: plan
-  };
-
-  try{
-    const response = await fetch("http://localhost:8000/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(userData)
-    });
-  
-  const data = await response.json();
-  if (!response.ok){
-    alert(data.detail || "Registration failed")
+  if (findByEmail(email)) {
+    alert("An account with that email already exists — log in instead.");
+    return;
+  }
+  if (usernameTaken(username)) {
+    alert("That username is taken. Try another one.");
     return;
   }
 
-  const registerMessage = document.getElementById("registerMessage");
-
-  registerMessage.textContent = data.message || "Registration successful!";
-  registerMessage.style.color = "green";
+  // TODO: connect to backend — POST /api/signup, then charge PLANS[plan].price
+  // via your payment processor before activating the membership.
+  currentUser = createMember(username, email, plan, password);
 
   registerModal.classList.add("hidden");
   registerForm.reset();
-} catch (error){
-  console.error("Registartion error:", error);
-  alert("Could not connect to server");
-}
+  renderAll();
+  if (currentView === "home") showView("account");
 });
 
 function logout() {
@@ -725,15 +734,15 @@ function renderSchedule() {
 
     let actionBtn;
     if (!currentUser) {
-      actionBtn = `<button class="btn btn--ghost btn--small" disabled>Log in to book</button>`;
+      actionBtn = `<button class="btn btn--ghost btn--small" disabled>Log in to enroll</button>`;
     } else if (isBooked) {
       actionBtn = `<button class="btn btn--danger btn--small" data-cancel-row="${c.id}">Cancel</button>`;
     } else if (isFull) {
       actionBtn = `<button class="btn btn--ghost btn--small" disabled>Full</button>`;
     } else if (!isActive(currentUser)) {
-      actionBtn = `<button class="btn btn--ghost btn--small" data-switch-plan="${currentUser.membership}">Renew to book</button>`;
+      actionBtn = `<button class="btn btn--ghost btn--small" data-switch-plan="${currentUser.membership}">Renew to enroll</button>`;
     } else {
-      actionBtn = `<button class="btn btn--primary btn--small" data-book="${c.id}">Book</button>`;
+      actionBtn = `<button class="btn btn--primary btn--small" data-book="${c.id}">Enroll</button>`;
     }
 
     return `

@@ -33,7 +33,7 @@
     </div>
   </header>
 
-  <!-- LOGIN MODAL -->
+  <!-- AUTH MODAL -->
   <div id="authModal" class="modal hidden">
     <div class="modal__box">
       <div class="modal__head">
@@ -41,14 +41,15 @@
         <button class="modal__close" data-close="authModal" aria-label="Close">&times;</button>
       </div>
       <form id="authForm" class="form">
-        <label>Name
-          <input type="text" id="authName" placeholder="Username" required>
+        <label>Email
+          <input type="email" id="authEmail" placeholder="you@example.com" required>
         </label>
         <label>Password
           <input type="password" id="authPassword" placeholder="••••••••" required>
         </label>
         <button type="submit" class="btn btn--primary btn--block">Log in</button>
-        <p class="form__note">This demo has no real backend — plug your API into <code>script.js</code>.</p>
+        <p id="authStatus" class="form__status" role="status"></p>
+        <p class="form__note">Demo login: <strong>demo@example.com</strong> / <strong>demo1234</strong>. No real backend — plug your API into <code>script.js</code>.</p>
       </form>
     </div>
   </div>
@@ -62,7 +63,7 @@
       </div>
       <form id="registerForm" class="form">
         <label>Username
-          <input type="text" id="regUsername" placeholder="username" required>
+          <input type="text" id="regUsername" placeholder="alexr" required>
         </label>
         <label>Email
           <input type="email" id="regEmail" placeholder="you@example.com" required>
@@ -87,7 +88,7 @@
               <span class="plan-card__duration">90 days</span>
             </label>
             <label class="plan-card">
-              <input type="radio" name="plan" value="Vip">
+              <input type="radio" name="plan" value="VIP">
               <span class="plan-card__name">VIP</span>
               <span class="plan-card__price">$300</span>
               <span class="plan-card__duration">365 days</span>
@@ -96,7 +97,7 @@
         </div>
 
         <button type="submit" class="btn btn--primary btn--block">Create account</button>
-        
+        <p class="form__note">This demo has no real backend — plug your API and payment flow into <code>script.js</code>.</p>
       </form>
     </div>
   </div>
@@ -326,7 +327,7 @@
             <th>Trainer</th>
             <th>Day / time</th>
             <th>Spots</th>
-            <th></th>
+            <th>Enroll</th>
           </tr>
         </thead>
         <tbody id="scheduleBody"></tbody>

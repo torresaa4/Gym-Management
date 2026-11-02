@@ -552,6 +552,14 @@ a:focus-visible {
   font-weight: 700;
 }
 
+/* Darker, filled "Switch to…" button so it stands out against the card */
+.pricing-card .btn--ghost {
+  background: var(--text);
+  border-color: var(--text);
+  color: #FFFFFF;
+}
+.pricing-card .btn--ghost:hover { background: #14140F; border-color: #14140F; }
+
 .fine-print {
   margin: 24px 0 0;
   color: var(--muted);
