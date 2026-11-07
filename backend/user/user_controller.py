@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from backend.user.user_schemas import UserCreate, UserLogin, LoginTokens
+from backend.user.user_schemas import UserCreate, UserLogin
 from backend.user import user_crud as crud 
 from sqlalchemy.orm import Session
 from backend.user.user_models import UserModel
@@ -85,4 +85,4 @@ def login_user(login: UserLogin, db: Session):
 
 
 def my_profile(current_user: UserModel, db: Session):
-    return crudfunction(current_user, db)
+    return crud.view_profile(current_user, db)

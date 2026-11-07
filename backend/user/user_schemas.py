@@ -24,3 +24,9 @@ class UserLogin(BaseModel):
 class LoginTokens(BaseModel):
     access_token: str
     token_type: str
+
+class MyProfile(BaseModel):
+    username: str
+    email: str
+    classes: list[str]
+

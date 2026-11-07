@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 
 from backend.user.user_models import UserModel
-from backend.user.user_schemas import UserCreate, UserLogin
+from backend.user.user_schemas import UserCreate
+from backend.enrollment.enrollment_model import Enrollment
+from backend.classes.classes_model import ClassModel
 
 # user register crud
 # recieves values from router using 
@@ -29,11 +31,26 @@ def get_username(db: Session, username: str):
 
 def view_profile(current_user: UserModel, db: Session):
 
-    # retunr current user stored info from routes depends(get_current_user)
-    # query enrollment databses to get classes enrolled 
-    # display for now name, lastname, email, classes
+    my_info = db.query(
+        UserModel.username,
+        UserModel.email,
+        ClassModel.class_name
+    
+    ).join(
+        Enrollment,
+        UserModel.id == Enrollment.user_id,
+    ).join(
+        ClassModel,
+        ClassModel.id == Enrollment.class_id
+    ).filter(
+        UserModel.id == current_user.id
+    ).all()   
 
 
-    pass
+    return {
+        "username": current_user.username,
+        "email": current_user.email,
+        "classes": [row.class_name for row in my_info]
+    }
 
 
