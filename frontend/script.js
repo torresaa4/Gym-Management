@@ -6,6 +6,10 @@
 
 // ---------- Mock data (replace with API calls) ----------
 // class.booked holds the ids of the members who booked that class.
+
+const API_URL = "http://127.0.0.1:8000";
+
+
 let classes = [
   { id: 1, name: "Sunrise HIIT", trainer: "Jordan Lee", type: "HIIT", day: "Monday", time: "6:00 AM", capacity: 12, booked: [] },
   { id: 2, name: "Power Vinyasa", trainer: "Ama Okafor", type: "Yoga", day: "Monday", time: "8:00 AM", capacity: 15, booked: [] },
@@ -74,33 +78,7 @@ const reduceMotion = typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- Members and memberships ----------
-function findByEmail(email) {
-  return members.find(m => m.email.toLowerCase() === email.toLowerCase());
-}
 
-function usernameTaken(username, except) {
-  return members.some(m => m !== except && m.username.toLowerCase() === username.toLowerCase());
-}
-
-function createMember(username, email, plan, password) {
-  const now = new Date();
-  const user = {
-    id: nextUserId++,
-    username,
-    email,
-    password, // TODO: connect to backend — never store or compare plain-text passwords for real
-    membership: plan,
-    joinedOn: now,
-    startedOn: now,
-    expiresOn: addDays(now, PLANS[plan].days),
-    bookings: [],
-  };
-  members.push(user);
-  return user;
-}
-
-// Seeded so there's a real account to log into right away — see the auth modal's note.
-createMember("Demo Member", "demo@example.com", "Premium", "demo1234");
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -139,7 +117,7 @@ function applyPlan(user, plan) {
   }
 }
 
-// Sample member shown by the signed-out preview of My account. Never added to `members`.
+// preview of my account page ----------------------------
 let previewUser = null;
 
 function accountUser() {
@@ -173,7 +151,6 @@ const registerBtn = document.getElementById("registerBtn");
 const acctMembership = document.getElementById("acctMembership");
 const profileForm = document.getElementById("profileForm");
 const profileStatus = document.getElementById("profileStatus");
-const authStatus = document.getElementById("authStatus");
 
 // ---------- View routing ----------
 const navlinks = document.querySelectorAll(".navlink");
@@ -215,16 +192,6 @@ function openRegister(plan) {
   registerModal.classList.remove("hidden");
 }
 
-function setAuthStatus(message, isError) {
-  authStatus.textContent = message;
-  authStatus.className = "form__status" + (isError ? " form__status--error" : "");
-}
-
-function openLogin() {
-  setAuthStatus("", false);
-  authModal.classList.remove("hidden");
-}
-
 // One delegated handler covers nav links, hero/CTA buttons, class tiles,
 // trainer cards, plan buttons and footer links, including ones rendered later by JS.
 document.addEventListener("click", (e) => {
@@ -236,7 +203,7 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (el.dataset.open === "login") {
-    openLogin();
+    authModal.classList.remove("hidden");
     return;
   }
   if (el.dataset.switchPlan) {
@@ -265,7 +232,6 @@ document.addEventListener("click", (e) => {
 document.querySelectorAll("[data-close]").forEach(btn => {
   btn.addEventListener("click", () => {
     document.getElementById(btn.dataset.close).classList.add("hidden");
-    if (btn.dataset.close === "authModal") setAuthStatus("", false);
   });
 });
 
@@ -279,68 +245,117 @@ authBtn.addEventListener("click", () => {
   if (currentUser) {
     logout();
   } else {
-    openLogin();
+    authModal.classList.remove("hidden");
   }
 });
 
 registerBtn.addEventListener("click", () => openRegister());
 
 // ---------- Auth: log in (mock — TODO: connect to backend) ----------
-authForm.addEventListener("submit", (e) => {
+authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const email = document.getElementById("authEmail").value.trim();
+  const username = document.getElementById("authName").value.trim();
   const password = document.getElementById("authPassword").value;
+  const userData = {
+    username: username,
+    password: password
+  };
 
-  // TODO: connect to backend — POST /api/login, and never compare plain-text passwords like this.
-  const match = findByEmail(email);
+  try{
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(userData)
+    });
+  
+  // TODO: connect to backend — POST /api/login
+  // For now: find an existing member by email, or create a quick Basic account.
+  
 
-  if (!match) {
-    setAuthStatus("No account found with that email. Sign up to create one.", true);
+  const login_data = await response.json();
+  if (!response.ok){
+    alert(login_data.detail || "Login failed")
     return;
   }
-  if (match.password !== password) {
-    setAuthStatus("Incorrect password. Try again.", true);
-    return;
+  // save jwt
+  const accessToken = login_data.access_token;
+  authModal.classList.add("hidden");
+  authForm.reset();
+
+  // use token to get user info
+  console.log("Login Successful:", accessToken);
+  sessionStorage.setItem("accessToken", accessToken);
+
+  // Retrieve the logged-in user's profile
+const profileResponse = await fetch(`${API_URL}/auth/my_profile`, {
+  method: "GET",
+  headers: {
+    "Authorization": `Bearer ${accessToken}`
   }
-
-  currentUser = match;
-  setAuthStatus(`Login successful — welcome back, ${match.username}.`, false);
-  renderAll();
-
-  // Give the success message a moment to show, then close and jump to My account.
-  window.setTimeout(() => {
-    authModal.classList.add("hidden");
-    authForm.reset();
-    setAuthStatus("", false);
-    showView("account");
-  }, 700);
 });
 
-// ---------- Auth: register (mock — TODO: connect to backend) ----------
-registerForm.addEventListener("submit", (e) => {
+const profileData = await profileResponse.json();
+
+if (!profileResponse.ok) {
+  throw new Error(profileData.detail || "Could not retrieve profile");
+}
+
+currentUser = profileData;
+
+renderAll();
+showView("account");
+
+
+  } catch (error){
+  console.error("Login error:", error);
+  alert(error.message);
+}
+});
+
+
+// ---------- Register Frontend to Backend Connection ----------
+registerForm.addEventListener("submit", async( e) => {
   e.preventDefault();
   const username = document.getElementById("regUsername").value.trim();
   const email = document.getElementById("regEmail").value.trim();
   const password = document.getElementById("regPassword").value;
   const plan = registerForm.querySelector('input[name="plan"]:checked').value;
 
-  if (findByEmail(email)) {
-    alert("An account with that email already exists — log in instead.");
-    return;
-  }
-  if (usernameTaken(username)) {
-    alert("That username is taken. Try another one.");
+  const userData = {
+    username: username,
+    email: email,
+    password: password,
+    membership_type: plan
+  };
+
+  try{
+    const response = await fetch("http://localhost:8000/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(userData)
+    });
+  
+  const data = await response.json();
+  if (!response.ok){
+    alert(data.detail || "Registration failed")
     return;
   }
 
-  // TODO: connect to backend — POST /api/signup, then charge PLANS[plan].price
-  // via your payment processor before activating the membership.
-  currentUser = createMember(username, email, plan, password);
+  const registerMessage = document.getElementById("registerMessage");
+
+  registerMessage.textContent = data.message || "Registration successful!";
+  registerMessage.style.color = "green";
 
   registerModal.classList.add("hidden");
   registerForm.reset();
-  renderAll();
-  if (currentView === "home") showView("account");
+} catch (error){
+  console.error("Registartion error:", error);
+  alert("Could not connect to server");
+}
 });
 
 function logout() {
@@ -734,15 +749,15 @@ function renderSchedule() {
 
     let actionBtn;
     if (!currentUser) {
-      actionBtn = `<button class="btn btn--ghost btn--small" disabled>Log in to enroll</button>`;
+      actionBtn = `<button class="btn btn--ghost btn--small" disabled>Log in to book</button>`;
     } else if (isBooked) {
       actionBtn = `<button class="btn btn--danger btn--small" data-cancel-row="${c.id}">Cancel</button>`;
     } else if (isFull) {
       actionBtn = `<button class="btn btn--ghost btn--small" disabled>Full</button>`;
     } else if (!isActive(currentUser)) {
-      actionBtn = `<button class="btn btn--ghost btn--small" data-switch-plan="${currentUser.membership}">Renew to enroll</button>`;
+      actionBtn = `<button class="btn btn--ghost btn--small" data-switch-plan="${currentUser.membership}">Renew to book</button>`;
     } else {
-      actionBtn = `<button class="btn btn--primary btn--small" data-book="${c.id}">Enroll</button>`;
+      actionBtn = `<button class="btn btn--primary btn--small" data-book="${c.id}">Book</button>`;
     }
 
     return `
