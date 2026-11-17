@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Date
+from datetime import date
 from backend.db import Base
 
 
@@ -10,6 +11,7 @@ class UserModel(Base):
     password = Column(String(255), nullable=False, unique=False)
     email = Column(String(20), nullable=False, unique=True)
     role  = Column(String(20), default="member", nullable=False)
+    joined = Column(Date, default=date.today, nullable=False)
 
 
 

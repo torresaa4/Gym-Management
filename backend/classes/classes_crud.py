@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from backend.classes.classes_schemas import AddClass
 from backend.classes.classes_model import ClassModel
 from backend.instructor.instructor_model import InstructorModel
+from backend. enrollment.enrollment_model import Enrollment
+from fastapi import HTTPException
 
 
 def create_class(new_class: AddClass, db: Session):
@@ -18,14 +20,13 @@ def create_class(new_class: AddClass, db: Session):
 
 def all_classes(db: Session):
 
-    # SELECT CNAME, CDATE, NAME, LASTNAME 
-    # FROM CLASS
-    # JOIN INSTRUCTOR
-    # ON ClassModel.instructor_id == InstructorModel.id
-    
     classes = db.query(
+
+        ClassModel.id,
         ClassModel.class_name,
-        ClassModel.class_date,
+        ClassModel.class_day,
+        ClassModel.start_time,
+        ClassModel.end_time,
         InstructorModel.name,
         InstructorModel.last_name
         ).join(
@@ -35,4 +36,33 @@ def all_classes(db: Session):
 
 
 
-    return classes
+    return [
+        {
+            "id": c.id,
+            "class_name": c.class_name,
+            "class_day": c.class_day,
+            "start_time": c.start_time.isoformat(),
+            "end_time": c.end_time.isoformat(),
+            "name": c.name,
+            "last_name": c.last_name
+        }
+        for c in classes
+    ]
+
+
+def delete_class(class_id: int, db: Session):
+    
+    current_class = db.query(ClassModel).filter(
+        ClassModel.id == class_id
+    ).first()
+
+    if current_class is None:
+        raise HTTPException(status_code=404, detail="Class is not found")
+
+    # delete enrollments from class
+    db.query(Enrollment).filter(
+        Enrollment.class_id == class_id
+    ).delete()
+
+    db.delete(current_class)
+    db.commit()

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from backend.instructor.instructor_schema import InstructorCreate
 from backend.instructor.instructor_model import InstructorModel
-from backend.instructor.instructor_crud import add_instructor, get_instructors, updated_instructor
+from backend.instructor.instructor_crud import add_instructor, get_instructors, updated_instructor, delete_instructors
 from fastapi import HTTPException
 
 
@@ -38,4 +38,4 @@ def update_instructor(instructor_id: int, new_instructor: InstructorCreate, db: 
 
 def delete_instructor(instructor_id: int, db: Session):
 
-    return crud(instructor_id, db)
+    return delete_instructors(instructor_id, db)

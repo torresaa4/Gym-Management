@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from backend.user.user_schemas import UserCreate, UserLogin
+from backend.user.user_schemas import UserCreate, UserLogin, UpdateProfile
 from backend.user import user_crud as crud 
 from sqlalchemy.orm import Session
 from backend.user.user_models import UserModel
@@ -56,12 +56,8 @@ def register(new_user: UserCreate, db: Session):
     except Exception:
         db.rollback()
         raise
-    
-
-   
 
     
-
 def login_user(login: UserLogin, db: Session):
 
     user = crud.get_username(db, login.username)
@@ -86,3 +82,7 @@ def login_user(login: UserLogin, db: Session):
 
 def my_profile(current_user: UserModel, db: Session):
     return crud.view_profile(current_user, db)
+
+
+def profile_update(new_user_information: UpdateProfile, current_user: UserModel, db: Session):
+    return crud.update_profile(new_user_information, current_user, db)

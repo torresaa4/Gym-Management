@@ -4,10 +4,7 @@ from backend.db import get_db
 from backend.user.user_models import UserModel
 from backend.user.user_security import require_admin
 from backend.classes.classes_schemas import AddClass, ClassResponse
-from backend.classes.classes_controller import add_class, get_classes
-
-
-
+from backend.classes.classes_controller import add_class, get_classes, class_delete
 
 
 
@@ -30,4 +27,11 @@ def get_class(db: Session = Depends(get_db)):
 
 
 
+@class_router.delete("/delete_class/{class_id}", status_code=status.HTTP_200_OK)
+def delete_class(
+    class_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(require_admin)
+):
+    return class_delete(class_id, db)
 

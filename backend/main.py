@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from backend.db import Base, engine
 from backend.user.user_routes import user_routes
+from backend.memberships.membership_routes import member_routes
 from backend.enrollment.enrollment_routes import enroll_api
 from backend.instructor.instructor_routes import instructor_routes
 from backend.user.user_models import UserModel
@@ -29,6 +30,7 @@ app.include_router(user_routes)
 app.include_router(instructor_routes)
 app.include_router(enroll_api)
 app.include_router(class_router)
+app.include_router(member_routes)
 
 @app.get('/')
 def root():
