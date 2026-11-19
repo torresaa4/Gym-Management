@@ -7,8 +7,8 @@ from backend.classes.classes_crud import create_class, all_classes, delete_class
 
 def add_class(new_class: AddClass, db: Session):
 
-    if not new_class.class_name or not new_class.class_date:
-        raise HTTPException(status_code=400, detail="class name and class date cant be empty")
+    if not new_class.class_name or not new_class.class_day or not new_class.start_time or not new_class.end_time:
+        raise HTTPException(status_code=400, detail="class information cant be empty")
     return create_class(new_class, db)
 
 

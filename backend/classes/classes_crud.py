@@ -7,15 +7,36 @@ from fastapi import HTTPException
 
 
 def create_class(new_class: AddClass, db: Session):
+
+    isnstructor = db.query(InstructorModel).filter(
+        InstructorModel.id == new_class.instructor_id
+    ).first()
+
+    if isnstructor is None:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+
     new_class = ClassModel(
         class_name = new_class.class_name,
         instructor_id =  new_class.instructor_id,
-        class_date = new_class.class_date
+        class_day = new_class.class_day,
+        start_time = new_class.start_time,
+        end_time = new_class.end_time
     )
 
     db.add(new_class)
     db.commit()
-    db.refresh()
+    db.refresh(new_class)
+
+    return{
+        "id": new_class.id,
+        "class_name": new_class.class_name,
+        "class_day": new_class.class_day,
+        "start_time": new_class.start_time,
+        "end_time": new_class.end_time,
+        "instructor_name": isnstructor.name,
+        "instructor_last_name": isnstructor.last_name
+    }
+
 
 
 def all_classes(db: Session):

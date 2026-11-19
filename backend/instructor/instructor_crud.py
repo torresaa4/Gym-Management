@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from backend.instructor.instructor_model import InstructorModel
 from backend.instructor.instructor_schema import InstructorCreate, InstructorUpdate
+from backend.classes.classes_model import ClassModel
 from fastapi import HTTPException
 
 
@@ -53,6 +54,17 @@ def delete_instructors(instructor_id: int, db: Session):
         raise HTTPException(
             status_code=404,
             detail="Instructor not found")
+
+    # Check if instructor is assigned to a class
+    assigned_class = db.query(ClassModel).filter(
+        ClassModel.instructor_id == instructor_id
+    ).first()
+
+    if assigned_class:
+        raise HTTPException(
+            status_code=400,
+            detail="Cant delete instructor because they are active."
+        )
 
     db.delete(instructor)
     db.commit()

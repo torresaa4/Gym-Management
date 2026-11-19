@@ -45,4 +45,4 @@ def delete_instructors(
     current_user: UserModel = Depends(require_admin),
      db : Session = Depends(get_db)
 ):
-    return delete_instructor(instructor_id, current_user, db)
+    return delete_instructor(instructor_id, db)
