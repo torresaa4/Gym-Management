@@ -154,9 +154,9 @@ a:focus-visible {
 }
 
 .btn--danger {
-  background: transparent;
-  border-color: var(--crimson);
-  color: var(--crimson);
+  background-color: #E8796B !important;
+  border: 1px solid #E8796B;
+  color: black;
 }
 
 .btn--dark {
@@ -783,6 +783,13 @@ a:focus-visible {
   padding: 20px 0;
 }
 
+
+.schedule-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ---- Filters ---- */
 .filters {
   display: flex;
@@ -863,6 +870,15 @@ a:focus-visible {
   color: var(--muted);
   font-size: 12px;
 }
+
+.form .success-message {
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+
 
 /* ---- Membership plan picker (registration modal) ---- */
 .plan-picker { display: flex; flex-direction: column; gap: 10px; }
@@ -1200,3 +1216,4 @@ fieldset.plan-picker {
 .hero__cta [data-view="schedule"] {
   color: #ffffff;
 }
+

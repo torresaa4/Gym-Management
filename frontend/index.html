@@ -88,7 +88,7 @@
               <span class="plan-card__duration">90 days</span>
             </label>
             <label class="plan-card">
-              <input type="radio" name="plan" value="VIP">
+              <input type="radio" name="plan" value="Vip">
               <span class="plan-card__name">VIP</span>
               <span class="plan-card__price">$300</span>
               <span class="plan-card__duration">365 days</span>
@@ -97,7 +97,8 @@
         </div>
 
         <button type="submit" class="btn btn--primary btn--block">Create account</button>
-        <p class="form__note">This demo has no real backend — plug your API and payment flow into <code>script.js</code>.</p>
+        <p id="regMessage" class="success-message">User has been created!</p>
+        
       </form>
     </div>
   </div>
@@ -285,6 +286,9 @@
             <label>Email
               <input type="email" id="profEmail" autocomplete="email" required>
             </label>
+            <label>Password
+              <input type="password" id="profPassword" autocomplete="new-password">
+            </label>
             <button type="submit" class="btn btn--primary">Save changes</button>
             <p id="profileStatus" class="form__status" role="status"></p>
           </form>
@@ -300,6 +304,82 @@
     <!-- SCHEDULE -->
     <section id="view-schedule" class="view view--page hidden">
       <h1 class="section-title section-title--lg">Class schedule</h1>
+      
+      <!-- ADMIN CONTROLS -->
+      <div id="Admin" class="panel hidden">
+
+      <h1 class="panel__title">Manage Classes</h1>
+
+      <!-- Add class -->
+      <form id="addClassForm" class="form">
+      <h4>Add a Class</h4>
+
+      <label>Class name
+        <input type="text" id="className" required>
+        </label>
+
+      <label>Instructor
+        <select id="Instructor" required>
+          <option value="">Select an instructor</option>
+        </select>
+      </label>
+
+      <label>Class days
+        <input
+          type="text"
+          id="classDay"
+          placeholder="Example: Wednesday & Friday"
+          required>
+      </label>
+
+      <label>Start time
+        <input type="time" id="classStartTime" placeholder="1:00 PM"required>
+      </label>
+
+      <label>End time
+        <input type="time" id="classEndTime" placeholder="2:30 PM"required>
+      </label>
+
+      <button type="submit" class="btn btn--primary">Add Class</button>
+      </form>
+      <br>
+      <br>
+
+      <h2 class="panel__title">Manage Instructors </h2>
+      <form id="addInstructor" class="form">
+        <h3>Add a Instructor</h3>
+
+        <label> First name 
+          <input type="text" id="InstName" required>
+        </label>
+
+        <label> Last name 
+          <input type="text" id="InstLastName" required>
+        </label>
+
+        <button type="submit" class="btn btn--primary">
+          Add Instructor
+        </button>
+      </form>
+      <form id="DelInstructor" class="form">
+        <h3>Delete an Instructor</h3>
+         <label>Instructor
+        <select id="Instructor_delete" required>
+          <option value="">Select an instructor</option>
+        </select>
+        <br>
+        <button type="submit" class="btn btn--danger btn--primary">
+          Delete Instructor
+        </button>
+      </label>
+
+
+
+  </div>
+
+
+
+
 
       <div class="filters">
         <input type="text" id="filterSearch" placeholder="Search classes or trainers…">
@@ -368,6 +448,8 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+
+
+<script src="script.js"></script>
 </body>
 </html>

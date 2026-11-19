@@ -1,23 +1,11 @@
-/*
-  SUMMIT FITNESS — front-end scaffold
-  All data below is in-memory mock data. Replace the functions marked
-  "TODO: connect to backend" with real fetch() calls to your API.
-*/
 
-// ---------- Mock data (replace with API calls) ----------
-// class.booked holds the ids of the members who booked that class.
+
 
 const API_URL = "http://127.0.0.1:8000";
+let membershipUpdateInProgress = false;
 
 
-let classes = [
-  { id: 1, name: "Sunrise HIIT", trainer: "Jordan Lee", type: "HIIT", day: "Monday", time: "6:00 AM", capacity: 12, booked: [] },
-  { id: 2, name: "Power Vinyasa", trainer: "Ama Okafor", type: "Yoga", day: "Monday", time: "8:00 AM", capacity: 15, booked: [] },
-  { id: 3, name: "Barbell Strength", trainer: "Marco Diaz", type: "Strength", day: "Tuesday", time: "5:30 PM", capacity: 10, booked: [] },
-  { id: 4, name: "Spin Sprint", trainer: "Priya Nair", type: "Cycling", day: "Wednesday", time: "6:30 AM", capacity: 20, booked: [] },
-  { id: 5, name: "Evening Flow", trainer: "Ama Okafor", type: "Yoga", day: "Thursday", time: "7:00 PM", capacity: 15, booked: [] },
-  { id: 6, name: "Full Body HIIT", trainer: "Jordan Lee", type: "HIIT", day: "Friday", time: "6:00 AM", capacity: 12, booked: [] },
-];
+let classes = [];
 
 let members = []; // { id, username, email, membership, joinedOn, startedOn, expiresOn, bookings: [classId] }
 let nextUserId = 1;
@@ -31,11 +19,11 @@ let membershipNotice = "";  // confirmation shown after renewing or switching pl
 // They see sample data with every control turned off. Set to false to restore the sign-in gate.
 const ACCOUNT_PREVIEW = true;
 
-// Membership plans — TODO: connect to backend / payment processor (e.g. Stripe)
+
 const PLANS = {
   Basic:   { price: 30,  days: 30,  blurb: "A month to find your rhythm." },
   Premium: { price: 80,  days: 90,  blurb: "A full season of training." },
-  VIP:     { price: 300, days: 365, blurb: "A full year at the lowest daily rate." },
+  Vip:     { price: 300, days: 365, blurb: "A full year at the lowest daily rate." },
 };
 const PLAN_PERKS = [
   "Book classes online",
@@ -49,6 +37,8 @@ const PLAN_PERKS = [
 const HERO_PHOTOS = { Strength: "images/danielle-cerullo-CQfNt66ttZM-unsplash.jpg", Yoga: "images/ambitious-studio-rick-barrett-w7jYaN7GqyA-unsplash.jpg", HIIT: "images/jonathan-borba-R0y_bEUjiOM-unsplash.jpg", Cycling: "images/sam-moghadam-W8CyjblrF8U-unsplash.jpg" };
 
 // ---------- Helpers ----------
+
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -61,9 +51,21 @@ function addDays(date, days) {
   return result;
 }
 
+function parseLocalDate(value) {
+  if (!value) return null;
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+}
+
 function formatDate(date) {
   if (!date) return "—";
-  return new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  return parseLocalDate(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function initials(name) {
@@ -77,17 +79,26 @@ function plural(n, one, many) {
 const reduceMotion = typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+
+
+// --------Admin Function -------------
+function isAdmin(){
+  return currentUser && currentUser.role ==="admin";
+}
+
 // ---------- Members and memberships ----------
 
 
 function startOfDay(date) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
+  if (!d) return null;
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function endOfDay(date) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
+  if (!d) return null;
   d.setHours(23, 59, 59, 999);
   return d;
 }
@@ -117,7 +128,7 @@ function applyPlan(user, plan) {
   }
 }
 
-// preview of my account page ----------------------------
+// ------- preview of my account page --------------------
 let previewUser = null;
 
 function accountUser() {
@@ -129,10 +140,10 @@ function accountUser() {
       username: "Sample Member",
       email: "sample@example.com",
       membership: "Premium",
-      joinedOn: addDays(now, -45),
+      joined: addDays(now, -45),
       startedOn: addDays(now, -30),
       expiresOn: addDays(now, PLANS.Premium.days - 30),
-      bookings: [1],
+      bookings: [],
     };
   }
   return previewUser;
@@ -185,6 +196,11 @@ function scrollToSection(id) {
 }
 
 function openRegister(plan) {
+
+  const registerMessage = document.getElementById("regMessage");
+  registerMessage.textContent = "";
+  registerMessage.classList.remove("success-message");
+
   if (plan && PLANS[plan]) {
     const radio = registerForm.querySelector(`input[name="plan"][value="${plan}"]`);
     if (radio) radio.checked = true;
@@ -251,7 +267,7 @@ authBtn.addEventListener("click", () => {
 
 registerBtn.addEventListener("click", () => openRegister());
 
-// ---------- Auth: log in (mock — TODO: connect to backend) ----------
+// ---------- Auth: log in  ----------
 authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const username = document.getElementById("authName").value.trim();
@@ -270,8 +286,6 @@ authForm.addEventListener("submit", async (e) => {
       body: JSON.stringify(userData)
     });
   
-  // TODO: connect to backend — POST /api/login
-  // For now: find an existing member by email, or create a quick Basic account.
   
 
   const login_data = await response.json();
@@ -304,6 +318,7 @@ if (!profileResponse.ok) {
 
 currentUser = profileData;
 
+
 renderAll();
 showView("account");
 
@@ -313,6 +328,47 @@ showView("account");
   alert(error.message);
 }
 });
+
+
+
+// ---------- Restore login after page reload ----------
+async function restoreSession() {
+  const accessToken = sessionStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    renderAll();
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/my_profile`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Session expired");
+    }
+
+    currentUser = await response.json();
+
+    renderAll();
+
+  } catch (error) {
+    console.error("Session restore error:", error);
+    sessionStorage.removeItem("accessToken");
+    currentUser = null;
+    renderAll();
+  }
+}
+
+
+
+
+
+
 
 
 // ---------- Register Frontend to Backend Connection ----------
@@ -331,7 +387,7 @@ registerForm.addEventListener("submit", async( e) => {
   };
 
   try{
-    const response = await fetch("http://localhost:8000/auth/register", {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -345,12 +401,15 @@ registerForm.addEventListener("submit", async( e) => {
     return;
   }
 
-  const registerMessage = document.getElementById("registerMessage");
+  const registerMessage = document.getElementById("regMessage");
 
-  registerMessage.textContent = data.message || "Registration successful!";
-  registerMessage.style.color = "green";
+  registerMessage.classList.add("success-message");
 
-  registerModal.classList.add("hidden");
+
+  registerMessage.textContent = "User has been created!";
+  
+
+
   registerForm.reset();
 } catch (error){
   console.error("Registartion error:", error);
@@ -358,7 +417,49 @@ registerForm.addEventListener("submit", async( e) => {
 }
 });
 
+
+//---------- schedule ----------------
+
+async function loadClasses() {
+  console.log("loadClasses started");
+  try {
+    const response = await fetch (`${API_URL}/class/get_classes`);
+
+    if (!response.ok){
+      throw new Error("Couldnt find class");
+
+    }
+
+    const data = await response.json();
+    
+
+    classes = data.map(c => ({
+
+      id: c.id,
+      name: c.class_name,
+      trainer: `${c.name} ${c.last_name}`,
+      type: c.class_name || "General",
+      day: c.class_day,
+      time: c.start_time,
+      endTime: c.end_time,
+      capacity: c.capacity || 12,
+      booked: []
+
+    }));
+
+    renderAll();
+
+  } catch (error){
+    console.error("Error loading classes:", error);
+  }
+  
+}
+
+
+
+// --------- logout ----------
 function logout() {
+  sessionStorage.removeItem("accessToken");
   currentUser = null;
   profileFormFor = null;
   planChoice = null;
@@ -373,6 +474,9 @@ function renderAll() {
   renderHome();
   renderAccount();
   renderSchedule();
+
+  document.getElementById("Admin")
+  .classList.toggle("hidden", !isAdmin());
 }
 
 function renderUserBar() {
@@ -542,6 +646,14 @@ Object.entries(HERO_PHOTOS).forEach(([type, url]) => {
 function renderAccount() {
   if (!currentUser && !ACCOUNT_PREVIEW) return;
   const u = accountUser();
+
+  console.log("currentUser:", currentUser);
+  console.log("accountUser:", u);
+  console.log("joined date:", u.joined);
+
+
+
+
   const preview = !currentUser;
 
   document.getElementById("previewBanner").classList.toggle("hidden", !preview);
@@ -549,7 +661,7 @@ function renderAccount() {
   document.getElementById("acctName").textContent = u.username;
   document.getElementById("acctSince").textContent = preview
     ? "Sample data, not a real account"
-    : `Member since ${formatDate(u.joinedOn)}`;
+    : `Member since ${formatDate(u.joined)}`;
 
   // Fill the profile form once per member, so unsaved typing isn't wiped by other updates
   if (profileFormFor !== u.id) {
@@ -647,24 +759,63 @@ acctMembership.addEventListener("change", (e) => {
   updatePlanAction();
 });
 
-acctMembership.addEventListener("submit", (e) => {
+acctMembership.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   if (e.target.id !== "planForm" || !currentUser) return;
-  const choice = e.target.querySelector('input[name="acctPlan"]:checked').value;
+
+  if (membershipUpdateInProgress) return;
+  membershipUpdateInProgress = true;
+
+  const choice = e.target.querySelector(
+    'input[name="acctPlan"]:checked'
+  ).value;
+
   const renewal = choice === currentUser.membership;
 
-  // TODO: connect to backend — POST /api/memberships { plan }, charging PLANS[choice].price
-  // via your payment processor before the new expiry date is saved.
-  applyPlan(currentUser, choice);
+  const accessToken = sessionStorage.getItem("accessToken");
 
-  planChoice = null;
-  membershipNotice = `${renewal ? "Renewed" : "Switched to"} ${choice}. Your plan now runs until ${formatDate(currentUser.expiresOn)}.`;
-  renderAll();
+  try {
+    const response = await fetch(`${API_URL}/user/update_membership`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        membership_type: choice
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Membership update failed");
+    }
+
+    currentUser.membership = data.membership_type;
+    currentUser.startedOn = data.start_date;
+    currentUser.expiresOn = data.end_date;
+
+    planChoice = null;
+
+    membershipNotice = `${renewal ? "Renewed" : "Switched to"} ${choice}. Your plan now runs until ${formatDate(currentUser.expiresOn)}.`;
+
+    renderAll();
+
+  } catch (error) {
+    console.error("Membership update failed:", error);
+    membershipNotice = error.message;
+    renderAll();
+  }
+  finally{
+    membershipUpdateInProgress = false;
+  }
 });
 
 function renderMyBookings(u, preview) {
   const wrap = document.getElementById("myBookings");
-  const mine = classes.filter(c => u.bookings.includes(c.id));
+  const mine = classes.filter(c => u.bookings.some(b => b.class_id === c.id));
 
   if (mine.length === 0) {
     wrap.innerHTML = `<p class="empty">No classes booked yet. <button class="linklike linklike--accent" data-view="schedule">Browse the schedule</button></p>`;
@@ -677,7 +828,7 @@ function renderMyBookings(u, preview) {
         <strong>${escapeHtml(c.name)}</strong>
         <div class="booking-item__meta">${escapeHtml(c.day)} · ${escapeHtml(c.time)} · ${escapeHtml(c.trainer)}</div>
       </div>
-      <button class="btn btn--danger btn--small" data-cancel="${c.id}"${preview ? " disabled" : ""}>Cancel</button>
+      <button class="btn btn--danger btn--small" data-cancel="${u.bookings.find(b => b.class_id === c.id).enrollment_id}"${preview ? " disabled" : ""}>Cancel</button>
     </div>
   `).join("");
 
@@ -686,14 +837,21 @@ function renderMyBookings(u, preview) {
   });
 }
 
-// Profile details (mock — TODO: connect to backend: PATCH /api/me)
-profileForm.addEventListener("submit", (e) => {
+
+
+// ----------------- Profile details -------------------------
+profileForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+
   if (!currentUser) return;
+
   const usernameInput = document.getElementById("profUsername");
   const emailInput = document.getElementById("profEmail");
+  const passwordInput = document.getElementById("profPassword");
   const username = usernameInput.value.trim();
   const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
 
   const fail = (msg) => {
     profileStatus.textContent = msg;
@@ -701,17 +859,44 @@ profileForm.addEventListener("submit", (e) => {
   };
 
   if (!username) return fail("Enter a username.");
-  const other = findByEmail(email);
-  if (other && other !== currentUser) return fail("That email is already used by another account.");
-  if (usernameTaken(username, currentUser)) return fail("That username is taken. Try another one.");
+  if (!email) return fail("Enter an email.");
 
-  currentUser.username = username;
-  currentUser.email = email;
-  usernameInput.value = username;
-  emailInput.value = email;
-  profileStatus.textContent = "Changes saved.";
-  profileStatus.className = "form__status";
-  renderAll();
+  const accessToken = sessionStorage.getItem("accessToken");
+
+  try{
+    const response = await fetch(`${API_URL}/auth/update_profile`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        username: username,
+        email: email,
+        ...(password ? { password: password } : {})
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok){
+      return fail(data.detail || "Could not update profile");
+    }
+
+    currentUser.username = username;
+    currentUser.email = email;
+    passwordInput.value = "";
+
+    profileStatus.textContent = "Changes saved.";
+    profileStatus.className = "form__status";
+
+    renderAll();
+
+  } catch (error){
+    console.error("Update error", error);
+    fail("could not connect to server");
+  }
+
+  
 });
 
 profileForm.addEventListener("input", () => {
@@ -740,7 +925,8 @@ function renderSchedule() {
 
   tbody.innerHTML = filtered.map(c => {
     const spotsLeft = c.capacity - c.booked.length;
-    const isBooked = currentUser && c.booked.includes(currentUser.id);
+    const isBooked = currentUser &&
+    currentUser.bookings.some(b => b.class_id === c.id);
     const isFull = spotsLeft <= 0;
 
     let spotsClass = "";
@@ -751,14 +937,18 @@ function renderSchedule() {
     if (!currentUser) {
       actionBtn = `<button class="btn btn--ghost btn--small" disabled>Log in to book</button>`;
     } else if (isBooked) {
-      actionBtn = `<button class="btn btn--danger btn--small" data-cancel-row="${c.id}">Cancel</button>`;
+      const booking = currentUser.bookings.find(b => b.class_id === c.id);
+      actionBtn = `<button class="btn btn--danger btn--small" data-cancel-row="${booking.enrollment_id}">Unenroll</button>`;
     } else if (isFull) {
       actionBtn = `<button class="btn btn--ghost btn--small" disabled>Full</button>`;
     } else if (!isActive(currentUser)) {
       actionBtn = `<button class="btn btn--ghost btn--small" data-switch-plan="${currentUser.membership}">Renew to book</button>`;
     } else {
-      actionBtn = `<button class="btn btn--primary btn--small" data-book="${c.id}">Book</button>`;
+      actionBtn = `<button class="btn btn--primary btn--small" data-book="${c.id}">Enroll</button>`;
     }
+    
+    const deleteButton = isAdmin()
+    ? `<button class="btn btn--danger btn--small" data-delete-class="${c.id}">Delete</button>`:"";
 
     return `
       <tr>
@@ -766,7 +956,12 @@ function renderSchedule() {
         <td>${escapeHtml(c.trainer)}</td>
         <td>${escapeHtml(c.day)} · ${escapeHtml(c.time)}</td>
         <td class="${spotsClass}">${isFull ? "Full" : `${spotsLeft} left`}</td>
-        <td>${actionBtn}</td>
+        <td>
+          <div class="schedAct">
+          ${actionBtn}
+          ${deleteButton}
+          </div>
+        </td>
       </tr>
     `;
   }).join("");
@@ -777,51 +972,373 @@ function renderSchedule() {
   tbody.querySelectorAll("[data-cancel-row]").forEach(btn => {
     btn.addEventListener("click", () => cancelBooking(Number(btn.dataset.cancelRow)));
   });
+
+  tbody.querySelectorAll("[data-delete-class").forEach(btn => {
+    btn.addEventListener("click", () => {
+      deleteClass(Number(btn.dataset.deleteClass));
+    });
+  });
 }
 
-// ---------- Booking logic (TODO: connect to backend) ----------
-function bookClass(classId) {
+
+
+// ------------ Admin schedule --------------
+async function loadInstructors() {
+    const instructorSelect = document.getElementById("Instructor");
+    const instructorSelectDelete = document.getElementById("Instructor_delete");
+
+    try {
+        const response = await fetch(`${API_URL}/instructor/all_instructor`);
+
+        if (!response.ok) {
+            throw new Error("Couldnt load instructors");
+        }
+
+        const instructors = await response.json();
+
+        instructorSelect.innerHTML =
+            '<option value="">Select an instructor</option>';
+
+        instructorSelectDelete.innerHTML =
+            '<option value="">Select an instructor</option>';
+
+        instructors.forEach(instructor => {
+            const option = document.createElement("option");
+
+            option.value = instructor.id;
+            option.textContent =
+                `${instructor.name} ${instructor.last_name}`;
+
+            instructorSelect.appendChild(option);
+
+            instructorSelectDelete.appendChild(option.cloneNode(true));
+
+        });
+
+    } catch (error) {
+        console.error("Error loading instructors:", error);
+    }
+} 
+
+async function addClass(event) {
+    event.preventDefault();
+
+    const className = document.getElementById("className").value.trim();
+    const instructorId = document.getElementById("Instructor").value;
+    const classDay = document.getElementById("classDay").value.trim();
+    const startTime = document.getElementById("classStartTime").value;
+    const endTime = document.getElementById("classEndTime").value;
+
+    const accessToken = sessionStorage.getItem("accessToken");
+
+    if (!accessToken) {
+        alert("log in first.");
+        return;
+    }
+
+    if (!classDay) {
+        alert("Enter the class days.");
+        return;
+    }
+
+    if (endTime <= startTime) {
+        alert("cant end befpre it starts");
+        return;
+    }
+
+    const newClass = {
+        class_name: className,
+        instructor_id: Number(instructorId),
+        class_day: classDay,
+        start_time: startTime,
+        end_time: endTime
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/class/post_class`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(newClass)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Failed to create class.");
+        }
+
+        alert("Class added successfully!");
+
+        document.getElementById("addClassForm").reset();
+
+        await loadClasses();
+        renderAll();
+
+    } catch (error) {
+        console.error("Error adding class:", error);
+        alert(error.message);
+    }
+}
+
+
+
+async function deleteClass(classId) {
+  if (!isAdmin()) return;
+
+  const confirmed = confirm("do you want to delete?");
+  if (!confirmed) return;
+
+  const accessToken = sessionStorage.getItem("accessToken");
+
+  try {
+    const response = await fetch(
+      `${API_URL}/class/delete_class/${classId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(data.detail));
+    }
+
+    // Remove from frontend
+    classes = classes.filter(c => c.id !== classId);
+
+    renderAll();
+
+  } catch (error) {
+    console.error("Delete class error:", error);
+    alert(error.message);
+  }
+}
+
+// -------- add Instructor -----------
+document.getElementById("addInstructor").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const name = document.getElementById("InstName").value;
+  const last_name = document.getElementById("InstLastName").value;
+
+  const accessToken = sessionStorage.getItem("accessToken");
+
+  try {
+    const response = await fetch(`${API_URL}/instructor/add_instructor`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        name: name,
+        last_name: last_name
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(data.detail));
+    }
+
+    alert("Instructor added successfully!");
+
+    document.getElementById("addInstructor").reset();
+
+  } catch (error) {
+    console.error("Add instructor error:", error);
+    alert(error.message);
+  }
+});
+
+// ------------- Delete Instructor --------- 
+
+document.getElementById("DelInstructor").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const instructorId = document.getElementById("Instructor_delete").value;
+    const accessToken = sessionStorage.getItem("accessToken");
+
+    if (!instructorId) {
+        alert("Please select an instructor.");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to delete this instructor?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_URL}/instructor/delete_instructor/${instructorId}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Could not delete instructor.");
+        }
+
+        alert("Instructor deleted successfully!");
+
+        document.getElementById("DelInstructor").reset();
+
+        // Refresh both instructor dropdowns
+        await loadInstructors();
+
+    } catch (error) {
+        console.error("Delete instructor error:", error);
+        alert(error.message);
+    }
+});
+
+
+// ---------- Booking logic ----------
+async function bookClass(classId) {
   if (!currentUser) return;
+
   const cls = classes.find(c => c.id === classId);
   if (!cls) return;
 
-  // Guard: only active memberships can book
+  // Check if the user's membership is active
   if (!isActive(currentUser)) {
     alert("Your membership has expired. Renew it on your account page to book classes.");
     return;
   }
-  // Guard: capacity check
+
+  // Check if the class is full
   if (cls.booked.length >= cls.capacity) {
     alert("This class just filled up.");
     renderSchedule();
     return;
   }
-  // Guard: prevent double-booking
-  if (cls.booked.includes(currentUser.id)) return;
 
-  // TODO: connect to backend — POST /api/bookings { classId }
-  cls.booked.push(currentUser.id);
-  currentUser.bookings.push(classId);
-  renderAll();
+  // Get the JWT token saved during login
+  const accessToken = sessionStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    alert("Please log in before enrolling.");
+    return;
+  }
+
+  try {
+    // Send enrollment request to FastAPI
+    const response = await fetch(`${API_URL}/enrollment/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        class_id: classId
+      })
+    });
+
+    const data = await response.json();
+
+    // Handle errors returned by the backend
+    if (!response.ok) {
+      alert(data.detail || "Could not enroll in this class.");
+      return;
+    }
+
+    // Update the frontend after successful enrollment
+    if (!Array.isArray(currentUser.bookings)) {
+      currentUser.bookings = [];
+    }
+
+    cls.booked.push(currentUser.id);
+
+    currentUser.bookings.push({
+    class_id: classId,
+    enrollment_id: data.id
+    });
+
+    alert("Successfully enrolled in class!");
+
+    renderAll();
+
+  } catch (error) {
+    console.error("Enrollment error:", error);
+    alert("Could not connect to the server.");
+  }
 }
 
-function cancelBooking(classId) {
+
+// ------- unenroll --------
+
+async function cancelBooking(enrollment_id) {
   if (!currentUser) return;
-  const cls = classes.find(c => c.id === classId);
-  if (!cls) return;
 
-  // TODO: connect to backend — DELETE /api/bookings/:id
-  cls.booked = cls.booked.filter(id => id !== currentUser.id);
-  currentUser.bookings = currentUser.bookings.filter(id => id !== classId);
-  renderAll();
+  const accessToken = sessionStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    alert("Please log in again");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/enrollment/${enrollment_id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      alert(data.detail || "Failed to unenroll from this class.");
+      return;
+    }
+
+    // Refresh user
+    const profileResponse = await fetch(`${API_URL}/auth/my_profile`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    if (!profileResponse.ok) {
+      throw new Error("Could not refresh user profile.");
+    }
+
+    currentUser = await profileResponse.json();
+
+    await loadClasses();
+    renderAll();
+
+  } catch (error) {
+    console.error("Unenrollment error:", error);
+  }
 }
+
 
 // ---------- Filters ----------
 ["filterSearch", "filterDay", "filterType"].forEach(id => {
   document.getElementById(id).addEventListener("input", renderSchedule);
 });
+document.getElementById("addClassForm").addEventListener("submit", addClass);
 
 // ---------- Init ----------
-renderAll();
+loadClasses();
+restoreSession();
 setHeroSlide(0);
 startHeroTimer();
+loadInstructors();
