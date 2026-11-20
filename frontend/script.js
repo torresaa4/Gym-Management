@@ -1,7 +1,9 @@
 
 
-
-const API_URL = "http://127.0.0.1:8000";
+// local
+//const API_URL = "http://127.0.0.1:8000";
+// deployment
+const API_URL = "http://3.140.209.176";
 let membershipUpdateInProgress = false;
 
 
