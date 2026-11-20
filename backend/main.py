@@ -6,9 +6,9 @@ from backend.enrollment.enrollment_routes import enroll_api
 from backend.instructor.instructor_routes import instructor_routes
 from backend.user.user_models import UserModel
 from backend.instructor.instructor_model import InstructorModel
-from backend.user.user_models import UserModel
+from backend.classes.classes_model import ClassModel
+from backend.memberships.membership_models import membershipModel
 from backend.enrollment.enrollment_model import Enrollment
-from backend.instructor.instructor_model import InstructorModel
 from backend.classes.classes_routes import class_router
 from fastapi.middleware.cors import CORSMiddleware
 
