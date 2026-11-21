@@ -20,8 +20,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5500",
         "http://127.0.0.1:5500",
-        "www.gymhubproject.com",
-        "gymhubproject.com"
+        "https://www.gymhubproject.com",
+        "https://gymhubproject.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
