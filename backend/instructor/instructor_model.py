@@ -8,6 +8,6 @@ class InstructorModel(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), nullable=False)
     last_name = Column(String(20), nullable=False)
-    #class_id = Column(Integer, nullable=False)
+    
     
 

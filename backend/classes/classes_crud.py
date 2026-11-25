@@ -4,6 +4,7 @@ from backend.classes.classes_model import ClassModel
 from backend.instructor.instructor_model import InstructorModel
 from backend. enrollment.enrollment_model import Enrollment
 from fastapi import HTTPException
+from sqlalchemy import func
 
 
 def create_class(new_class: AddClass, db: Session):
@@ -39,10 +40,25 @@ def create_class(new_class: AddClass, db: Session):
 
 
 
+
 def all_classes(db: Session):
 
     classes = db.query(
-
+        ClassModel.id,
+        ClassModel.class_name,
+        ClassModel.class_day,
+        ClassModel.start_time,
+        ClassModel.end_time,
+        InstructorModel.name,
+        InstructorModel.last_name,
+        func.count(Enrollment.id).label("enrollment_count")
+    ).join(
+        InstructorModel,
+        ClassModel.instructor_id == InstructorModel.id
+    ).outerjoin(
+        Enrollment,
+        ClassModel.id == Enrollment.class_id
+    ).group_by(
         ClassModel.id,
         ClassModel.class_name,
         ClassModel.class_day,
@@ -50,12 +66,7 @@ def all_classes(db: Session):
         ClassModel.end_time,
         InstructorModel.name,
         InstructorModel.last_name
-        ).join(
-            InstructorModel,
-            ClassModel.instructor_id == InstructorModel.id
-        ).all()
-
-
+    ).all()
 
     return [
         {
@@ -65,10 +76,12 @@ def all_classes(db: Session):
             "start_time": c.start_time.isoformat(),
             "end_time": c.end_time.isoformat(),
             "name": c.name,
-            "last_name": c.last_name
+            "last_name": c.last_name,
+            "enrollment_count": c.enrollment_count
         }
         for c in classes
     ]
+
 
 
 def delete_class(class_id: int, db: Session):
