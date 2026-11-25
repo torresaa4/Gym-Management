@@ -33,9 +33,6 @@ const PLAN_PERKS = [
   "Expiry date tracked on your account",
 ];
 
-// Optional hero photos. Leave empty to use the built-in themed slides, or add the
-// path to a photo you have the rights to use, e.g. HIIT: "images/hiit.jpg".
-// The photo only replaces the slide background once it has loaded.
 const HERO_PHOTOS = { Strength: "images/danielle-cerullo-CQfNt66ttZM-unsplash.jpg", Yoga: "images/ambitious-studio-rick-barrett-w7jYaN7GqyA-unsplash.jpg", HIIT: "images/jonathan-borba-R0y_bEUjiOM-unsplash.jpg", Cycling: "images/sam-moghadam-W8CyjblrF8U-unsplash.jpg" };
 
 // ---------- Helpers ----------
