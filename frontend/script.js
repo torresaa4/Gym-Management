@@ -3,7 +3,7 @@
 // local
 //const API_URL = "http://127.0.0.1:8000";
 // deployment
-const API_URL = "http://3.140.209.176";
+const API_URL = "https://api.gymhubproject.com";
 let membershipUpdateInProgress = false;
 
 
@@ -445,7 +445,7 @@ async function loadClasses() {
       time: c.start_time,
       endTime: c.end_time,
       capacity: c.capacity || 12,
-      booked: []
+      booked: Array(c.enrollment_count).fill(null)
 
     }));
 
@@ -913,12 +913,26 @@ function renderSchedule() {
   const type = document.getElementById("filterType").value;
   const tbody = document.getElementById("scheduleBody");
 
+  const normalizeDay = d =>
+  d.trim().toLowerCase().replace(/\./g, "").slice(0, 3);
+
   const filtered = classes.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(search) || c.trainer.toLowerCase().includes(search);
-    const matchesDay = !day || c.day === day;
-    const matchesType = !type || c.type === type;
-    return matchesSearch && matchesDay && matchesType;
-  });
+  const matchesSearch =
+    c.name.toLowerCase().includes(search) ||
+    c.trainer.toLowerCase().includes(search);
+
+  const matchesDay = !day || c.day
+    .split(/\s*(?:&|and|,)\s*/i)
+    .some(d => normalizeDay(d) === normalizeDay(day));
+
+  const matchesType = !type || c.type === type;
+
+  return matchesSearch && matchesDay && matchesType;
+});
+
+
+
+
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="empty">No classes match those filters.</td></tr>`;
@@ -1333,9 +1347,12 @@ async function cancelBooking(enrollment_id) {
 
 
 // ---------- Filters ----------
-["filterSearch", "filterDay", "filterType"].forEach(id => {
-  document.getElementById(id).addEventListener("input", renderSchedule);
+document.getElementById("filterSearch").addEventListener("input", renderSchedule);
+
+["filterDay", "filterType"].forEach(id => {
+  document.getElementById(id).addEventListener("change", renderSchedule);
 });
+
 document.getElementById("addClassForm").addEventListener("submit", addClass);
 
 // ---------- Init ----------
